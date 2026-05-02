@@ -167,14 +167,7 @@ ARTICLES:
     )
 
     raw = response.content[0].text.strip()
-    
-    # strip markdown code fences if Claude added them
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    raw = raw.strip()
-
+    raw = raw.replace("```json", "").replace("```", "").strip()
     try:
         return json.loads(raw)
 
