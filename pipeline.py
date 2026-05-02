@@ -167,13 +167,16 @@ ARTICLES:
     )
 
     raw = response.content[0].text.strip()
+    
+    # strip markdown code fences if Claude added them
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    raw = raw.strip()
 
     try:
         return json.loads(raw)
-    except json.JSONDecodeError:
-        print("Claude JSON parse error — raw response:")
-        print(raw[:500])
-        return []
 
 # ── write results to Supabase ─────────────────────────
 def save_to_supabase(processed):
