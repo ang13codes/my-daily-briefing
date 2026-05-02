@@ -163,7 +163,7 @@ ARTICLES:
 
     response = client.messages.create(
          model="claude-sonnet-4-6",
-        max_tokens=8000,
+        max_tokens=16000,
         messages=[{"role": "user", "content": prompt}]
     )
 
@@ -225,7 +225,7 @@ def main():
     unique = deduplicate(all_articles)
     print(f"  Total after dedup: {len(unique)} articles")
 
-    batch_size = 20
+    batch_size = 10
     all_processed = []
     for i in range(0, len(unique), batch_size):
         batch = unique[i:i+batch_size]
