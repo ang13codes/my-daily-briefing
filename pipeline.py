@@ -8,9 +8,9 @@ from dateutil import parser as dateparser
 from datetime import datetime, timezone
 
 # ── clients ──────────────────────────────────────────
-client     = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-supabase   = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
-NEWS_KEY   = os.environ["NEWS_API_KEY"]
+client   = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
+NEWS_KEY = os.environ["NEWS_API_KEY"]
 
 # ── RSS sources tailored to your interests ───────────
 RSS_FEEDS = {
@@ -68,13 +68,13 @@ PERSONAL_PROFILE = """
 You are the personal research editor for someone with this profile:
 - Works in tech and insurance/life insurance
 - Passionate about product marketing, branding, and content strategy
-- Lives in New York City — wants to know about arts, culture, and events happening there
-- Follows GenAI closely — both technical developments and business implications
-- Defines URGENT as: (1) career impact — directly affects their work,
-  (2) NYC-specific — happening in their city, OR
-  (3) industry-moving — major shifts in tech, GenAI, or insurance
+- Lives in New York City - wants to know about arts, culture, and events happening there
+- Follows GenAI closely - both technical developments and business implications
+- Defines URGENT as: (1) career impact - directly affects their work,
+  (2) NYC-specific - happening in their city, OR
+  (3) industry-moving - major shifts in tech, GenAI, or insurance
 
-When scoring relevance and urgency, think specifically about this person —
+When scoring relevance and urgency, think specifically about this person -
 not whether something is generally important news, but whether it matters TO THEM.
 Always write a why_matters line that connects the article to their life or work.
 """
@@ -142,20 +142,21 @@ def process_with_claude(articles):
 
     prompt = f"""{PERSONAL_PROFILE}
 
-Here are today's articles. For each one return a JSON array with this exact structure:
+Here are today's articles. Return ONLY a JSON array, no markdown, no code fences, no explanation.
+Start your response with [ and end with ].
+
+Each item in the array must have exactly these fields:
 [
   {{
     "title": "original title",
     "summary": "2 sentence summary in plain conversational english",
     "category": "genai|tech|insurance|life_insurance|marketing_branding|content_creation|nyc_events",
-    "urgency": <integer 1-10>,
+    "urgency": ,
     "sentiment": "positive|negative|neutral",
     "source_url": "original url",
     "why_matters": "one sentence explaining why this matters specifically to this person"
   }}
 ]
-
-Only return the JSON array. No other text. No markdown. No code fences.
 
 ARTICLES:
 {batch_text}"""
@@ -168,14 +169,21 @@ ARTICLES:
 
     raw = response.content[0].text.strip()
     raw = raw.replace("```json", "").replace("```", "").strip()
-    print(f"  Claude raw preview: {raw[:100]}")
+
+    if not raw.startswith("["):
+        idx = raw.find("[")
+        if idx != -1:
+            raw = raw[idx:]
+
+    print(f"  Claude preview: {raw[:80]}")
 
     try:
         return json.loads(raw)
     except json.JSONDecodeError as e:
         print(f"  JSON error: {e}")
-        print(f"  Full raw: {raw[:500]}")
+        print(f"  Raw: {raw[:300]}")
         return []
+
 # ── write results to Supabase ─────────────────────────
 def save_to_supabase(processed):
     if not processed:
@@ -204,23 +212,19 @@ def main():
     print("Starting daily briefing pipeline...")
     all_articles = []
 
-    # fetch RSS
     for category, urls in RSS_FEEDS.items():
         articles = fetch_rss(category, urls)
         print(f"  RSS [{category}]: {len(articles)} articles")
         all_articles.extend(articles)
 
-    # fetch NewsAPI
     for category, query in NEWSAPI_QUERIES:
         articles = fetch_newsapi(category, query)
         print(f"  NewsAPI [{category}]: {len(articles)} articles")
         all_articles.extend(articles)
 
-    # deduplicate
     unique = deduplicate(all_articles)
     print(f"  Total after dedup: {len(unique)} articles")
 
-    # process in batches of 20 (keeps Claude prompts manageable)
     batch_size = 20
     all_processed = []
     for i in range(0, len(unique), batch_size):
@@ -229,7 +233,6 @@ def main():
         processed = process_with_claude(batch)
         all_processed.extend(processed)
 
-    # save
     save_to_supabase(all_processed)
     print("Pipeline complete.")
 
