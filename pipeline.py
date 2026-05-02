@@ -151,7 +151,7 @@ Each item in the array must have exactly these fields:
     "title": "original title",
     "summary": "2 sentence summary in plain conversational english",
     "category": "genai|tech|insurance|life_insurance|marketing_branding|content_creation|nyc_events",
-    "urgency": ,
+    "urgency": 5,
     "sentiment": "positive|negative|neutral",
     "source_url": "original url",
     "why_matters": "one sentence explaining why this matters specifically to this person"
