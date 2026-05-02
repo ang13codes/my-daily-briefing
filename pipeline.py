@@ -148,7 +148,7 @@ Here are today's articles. For each one return a JSON array with this exact stru
     "title": "original title",
     "summary": "2 sentence summary in plain conversational english",
     "category": "genai|tech|insurance|life_insurance|marketing_branding|content_creation|nyc_events",
-    "urgency": ,
+    "urgency": <integer 1-10>,
     "sentiment": "positive|negative|neutral",
     "source_url": "original url",
     "why_matters": "one sentence explaining why this matters specifically to this person"
@@ -168,9 +168,14 @@ ARTICLES:
 
     raw = response.content[0].text.strip()
     raw = raw.replace("```json", "").replace("```", "").strip()
+    print(f"  Claude raw preview: {raw[:100]}")
+
     try:
         return json.loads(raw)
-
+    except json.JSONDecodeError as e:
+        print(f"  JSON error: {e}")
+        print(f"  Full raw: {raw[:500]}")
+        return []
 # ── write results to Supabase ─────────────────────────
 def save_to_supabase(processed):
     if not processed:
