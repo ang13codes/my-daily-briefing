@@ -19,7 +19,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Show version
+      - name: Show files
         run: head -5 pipeline.py
 
       - name: Run pipeline
